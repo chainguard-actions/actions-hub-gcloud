@@ -1,0 +1,21 @@
+name: Test gsutil CLI usage
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Run gsutil version
+        id: gsutil_version
+        uses: .
+        with:
+          args: version
+          cli: gsutil
+        env:
+          CLOUDSDK_AUTH_ACCESS_TOKEN: fake-token-for-testing
+          PROJECT_ID: fake-project-for-testing
+      - name: Assert gsutil ran successfully
+        run: |
+          echo "gsutil version step completed successfully"
+          echo "PASS"
