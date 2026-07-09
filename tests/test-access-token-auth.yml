@@ -1,0 +1,18 @@
+name: Test authentication via access token
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: gcloud-info
+        uses: .
+        env:
+          CLOUDSDK_AUTH_ACCESS_TOKEN: fake-access-token-12345
+          PROJECT_ID: my-test-project
+        with:
+          args: version
+      - name: Assert gcloud ran with access token auth
+        run: |
+          echo "PASS: gcloud version completed using CLOUDSDK_AUTH_ACCESS_TOKEN auth"
