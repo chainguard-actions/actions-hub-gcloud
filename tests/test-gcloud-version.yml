@@ -1,0 +1,19 @@
+name: Test gcloud version command
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      CLOUDSDK_AUTH_ACCESS_TOKEN: fake-token-for-testing
+      PROJECT_ID: fake-project-id
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          args: version
+          cli: gcloud
+      - name: Assert gcloud version ran successfully
+        run: |
+          echo "PASS: gcloud version command completed without error"
