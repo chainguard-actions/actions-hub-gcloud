@@ -8,33 +8,48 @@
 
 **Test Policy SHA:** `843adf9e4b8f85d0c08b27b9d0b09dd094b54702`
 
-**Harden Agent Version:** `1`
+**Harden Agent Version:** `2`
 
-Action **actions-hub--gcloud/575.0.1** was hardened automatically. 3 finding(s) were identified and resolved across 1 iteration(s).
+Action **actions-hub--gcloud/575.0.1** was hardened automatically. 4 finding(s) were identified and resolved across 2 iteration(s).
 
 ## Findings Fixed
 
 ### script-injection (severity: high)
 
-Sub-rule (a): The `${{ secrets.GH_TOKEN }}` expression is directly interpolated inside `run:` shell command strings in two steps of upgrader.yaml. Any `${{ ... }}` expression inside a run block is a script injection risk because the value is substituted into the shell command string before the shell parses it. If the token value contained shell metacharacters, it could alter command execution. Offending lines: `git config --global url."https://${{ secrets.GH_TOKEN }}:@github.com/"...` in both the 'Checkout repo' step (line 13) and the 'Modify Dockerfile' step (line 68).
+Two `run:` blocks in upgrader.yaml directly interpolate `${{ secrets.GH_TOKEN }}` into shell commands. Per the script-injection check, ANY `${{ ... }}` expression inside a `run:` block is a violation (sub-rule a), regardless of the context it reads from. The offending lines are:
+  - `git config --global url."https://${{ secrets.GH_TOKEN }}:@github.com/".insteadOf "https://github.com/"` (Checkout repo step, ~line 10)
+  - Same pattern repeated in the Modify Dockerfile step (~line 76)
 
 Locations:
 
-- `.github/workflows/upgrader.yaml:13`
-- `.github/workflows/upgrader.yaml:68`
+- `.github/workflows/upgrader.yaml:10`
+- `.github/workflows/upgrader.yaml:76`
+
+### github-env-injection (severity: high)
+
+In upgrader.yaml, the 'Check if new version exist' step writes `SDK_VERSION` and `LATEST_VERSION` — values derived from external curl API responses (Docker Hub and GitHub API, i.e. untrusted network data) — directly to `$GITHUB_ENV` without sanitization (`printf '%s' ... | tr -d '\n\r'` is never applied). An attacker who can influence the Docker Hub or GitHub API response could inject arbitrary environment variable values. Offending lines:
+  `echo "SDK_VERSION=${SDK_VERSION}" >> $GITHUB_ENV`
+  `echo "LATEST_VERSION=${LATEST_VERSION}" >> $GITHUB_ENV`
+
+Locations:
+
+- `.github/workflows/upgrader.yaml:37`
+- `.github/workflows/upgrader.yaml:38`
 
 ### unpinned-uses (severity: high)
 
-Multiple `uses:` references are pinned to mutable version tags rather than immutable 40-character commit SHAs, making the workflow vulnerable to supply-chain attacks if the tag is moved. Failing references: `actions/checkout@v2` (test.yaml, 4 occurrences) and `actions/create-release@v1` (upgrader.yaml).
+Multiple `uses:` references use mutable tags instead of full 40-character commit SHAs, making the workflow vulnerable to supply-chain attacks if the referenced tag is moved or overwritten:
+  - `actions/checkout@v2` (test.yaml, all four jobs)
+  - `actions/create-release@v1` (upgrader.yaml)
 
 Locations:
 
 - `.github/workflows/test.yaml:9`
-- `.github/workflows/upgrader.yaml:85`
+- `.github/workflows/upgrader.yaml:96`
 
 ### missing-permissions (severity: medium)
 
-Neither workflow file has a top-level `permissions:` key, and no job within either file defines its own `permissions:` block. Without explicit permissions, workflows run with the default token permissions (which may be overly broad, e.g. write access to repository contents). Both test.yaml and upgrader.yaml are affected.
+Neither `test.yaml` nor `upgrader.yaml` declares a top-level `permissions:` block, and no individual job within either file declares job-level `permissions:`. Without explicit permissions, workflows run with the default (potentially broad) token permissions, violating the principle of least privilege.
 
 Locations:
 
@@ -45,19 +60,25 @@ Locations:
 
 ### Iteration 1
 
-**Fixes applied:** script-injection, unpinned-uses, missing-permissions
+**Fixes applied:** script-injection, github-env-injection, unpinned-uses, missing-permissions
 
 **Notes:**
 
-Fixed all three findings across both workflow files:
+Fixed all four findings across both workflow files:
 
-1. **script-injection** (upgrader.yaml lines 13 and 68): Moved `${{ secrets.GH_TOKEN }}` out of `run:` shell strings and into `env:` blocks as `GH_TOKEN`. The shell commands now reference `${GH_TOKEN}` as a plain environment variable, preventing shell metacharacter injection.
+1. script-injection (upgrader.yaml): Moved `${{ secrets.GH_TOKEN }}` from two `run:` blocks into `env:` blocks as `GH_TOKEN`, referenced as `${GH_TOKEN}` in shell scripts.
 
-2. **unpinned-uses**: Pinned all mutable tag references to full 40-character commit SHAs:
-   - `actions/checkout@v2` → `actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # v2` (4 occurrences in test.yaml)
-   - `actions/create-release@v1` → `actions/create-release@0cb9c9b65d5d1901c1f53e5e66eaf4afd303e70e # v1` (upgrader.yaml)
+2. github-env-injection (upgrader.yaml): Added `printf '%s' "$VAR" | tr -d '\n\r'` sanitization for SDK_VERSION and LATEST_VERSION before writing to $GITHUB_ENV.
 
-3. **missing-permissions**: Added top-level `permissions:` blocks to both files:
-   - `upgrader.yaml`: `contents: write` (needed to push commits and create releases)
-   - `test.yaml`: `contents: read` (only needs to check out code)
+3. unpinned-uses: Pinned actions/checkout@v2 → @ee0669bd1cc54295c223e0bb666b733df41de1c5 (all 4 jobs in test.yaml) and actions/create-release@v1 → @0cb9c9b65d5d1901c1f53e5e66eaf4afd303e70e (upgrader.yaml). SHA comments preserved for readability.
+
+4. missing-permissions: Added top-level `permissions: contents: read` to test.yaml and `permissions: contents: write` to upgrader.yaml (write needed for git push and release creation).
+
+### Iteration 2
+
+**Fixes applied:** script-injection, suspicious-run-content, github-env-injection
+
+**Notes:**
+
+1. entrypoint.sh line 79: Replaced `eval "$command $*"` with `"$command" "$@"`. This eliminates the dangerous eval entirely — the command is now invoked directly as a quoted variable (preventing word-splitting on the command name), and `"$@"` passes each positional argument as a separate properly-quoted word, preventing shell injection from user-controlled inputs.args. 2. upgrader.yaml line 88 (Modify Dockerfile step): Added sanitization of SDK_VERSION before writing to GITHUB_OUTPUT: `safe_tag=$(printf '%s' "$SDK_VERSION" | tr -d '\n\r')` then `echo "tag=${safe_tag}" >> $GITHUB_OUTPUT`. This strips embedded newlines that could allow a maliciously crafted Docker Hub tag name to inject additional key=value pairs into the GitHub output context.
 
