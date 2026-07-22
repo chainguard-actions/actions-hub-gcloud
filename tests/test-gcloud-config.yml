@@ -1,0 +1,20 @@
+name: Test gcloud config list
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: gcloud_config
+        uses: .
+        env:
+          CLOUDSDK_AUTH_ACCESS_TOKEN: fake-token-for-config-check
+          PROJECT_ID: my-test-project-123
+        with:
+          args: config list --format=text
+          cli: gcloud
+      - name: Assert gcloud config list ran successfully
+        run: |
+          echo "gcloud config list step completed successfully"
+          echo "PASS"
