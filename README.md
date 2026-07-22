@@ -16,6 +16,7 @@ Hardened by [Chainguard](https://www.chainguard.dev) from the upstream action at
 | 574.0.0 | [`574.0.0`](https://github.com/chainguard-actions/actions-hub-gcloud/tree/574.0.0) | [`5614090`](https://github.com/actions-hub/gcloud/commit/5614090a49a74a08d30b817d29736f99e61a9037) |
 | 575.0.0 | [`575.0.0`](https://github.com/chainguard-actions/actions-hub-gcloud/tree/575.0.0) | [`8fbf926`](https://github.com/actions-hub/gcloud/commit/8fbf926214dff12b6499a2445d6b0b644fe964bf) |
 | 575.0.1 | [`575.0.1`](https://github.com/chainguard-actions/actions-hub-gcloud/tree/575.0.1) | [`d1ff127`](https://github.com/actions-hub/gcloud/commit/d1ff127ba9ac9214ddc94ffeab0b0d9170799869) |
+| 577.0.0 | [`577.0.0`](https://github.com/chainguard-actions/actions-hub-gcloud/tree/577.0.0) | [`dc4f4e3`](https://github.com/actions-hub/gcloud/commit/dc4f4e3f7e4dca0b90fdca825418d2d3d306d8cb) |
 
 ## Privacy
 
