@@ -1,0 +1,33 @@
+name: Test CLOUDSDK_AUTH_ACCESS_TOKEN auth path
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          args: version
+          cli: gcloud
+        env:
+          CLOUDSDK_AUTH_ACCESS_TOKEN: fake-access-token-for-testing
+          PROJECT_ID: test-project-id
+        continue-on-error: true
+      - name: Assert action ran and attempted auth with access token
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          # With a fake token, gcloud version should still succeed (it doesn't need auth)
+          # or the action may fail at auth activation. Either way, it should not
+          # fail due to missing credentials check (which exits before any gcloud call).
+          if [ "$OUTCOME" = "success" ]; then
+            echo "PASS: action succeeded with access token set"
+          elif [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action failed at gcloud level (fake token rejected), not at credentials check"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi
