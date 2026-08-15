@@ -6,16 +6,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - name: Run gcloud version
-        id: action
+      - name: Run gcloud version via action
+        id: gcloud_version
         uses: .
-        env:
-          CLOUDSDK_AUTH_ACCESS_TOKEN: fake-token-for-testing
-          PROJECT_ID: test-project
         with:
           args: version
           cli: gcloud
-      - name: Assert gcloud version ran successfully
+        env:
+          CLOUDSDK_AUTH_ACCESS_TOKEN: fake-token-for-version-check
+          PROJECT_ID: test-project
+      - name: Assert gcloud ran successfully
         run: |
-          echo "gcloud version command completed successfully"
-          echo "PASS"
+          echo "gcloud version step completed"
+          echo "PASS: gcloud version ran without error"
