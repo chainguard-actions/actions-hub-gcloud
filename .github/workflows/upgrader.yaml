@@ -1,0 +1,105 @@
+name: SDK version upgrade
+
+on:
+  schedule:
+    - cron: "0 */12 * * *"
+
+permissions: {}
+
+jobs:
+  check:
+    runs-on: ubuntu-latest    
+    steps:
+      - name: Checkout repo
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          git config --global url."https://$GH_TOKEN:@github.com/".insteadOf "https://github.com/"
+          git clone https://github.com/actions-hub/gcloud .
+
+      - name: Check if new version exist
+        id: check
+        run: |
+          SDK_VERSION=$(curl --silent "https://registry.hub.docker.com/v2/namespaces/google/repositories/cloud-sdk/tags" | jq '.results' | grep '"name":' | sed -E 's/.*"([^"]+)".*/\1/' | sort -V | head -n 1)
+          LATEST_VERSION=$(curl --silent "https://api.github.com/repos/actions-hub/gcloud/releases/latest" | tac | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+          DOCKER_VERSION=$(cat $GITHUB_WORKSPACE/Dockerfile | grep "FROM google/cloud-sdk:" | sed -E 's/FROM google\/cloud-sdk://' | sed -E 's/-alpine//')
+
+          echo $SDK_VERSION
+          echo $LATEST_VERSION
+          echo $DOCKER_VERSION
+
+          if [ "$SDK_VERSION" != "$LATEST_VERSION" ]; then
+            if [ "$LATEST_VERSION" = "`echo -e "$SDK_VERSION\n$LATEST_VERSION" | sort -V | head -n1`" ]; then
+              if [ "$DOCKER_VERSION" == "$LATEST_VERSION" ]; then
+                echo "New version detected: $SDK_VERSION. Latest in this repo: $LATEST_VERSION. Updating..."
+
+                echo "newest=yes" >> $GITHUB_OUTPUT
+                echo "SDK_VERSION=${SDK_VERSION}" >> $GITHUB_ENV
+                echo "LATEST_VERSION=${LATEST_VERSION}" >> $GITHUB_ENV
+              else
+                echo ::error::"Tag version in Dockerfile ($DOCKER_VERSION) is not the same as the latest release ($LATEST_VERSION)."
+                exit 1
+              fi
+            else
+              echo "newest=no" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "newest=no" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check if version tag is semver and if docker hub has it
+        id: test
+        if: steps.check.outputs.newest == 'yes'
+        run: |
+          if [[ $SDK_VERSION =~ ^[0-9]+(\.[0-9]+){2,3}$ ]]; then
+            echo "$SDK_VERSION it's semver"
+          else
+            echo ::error::"$SDK_VERSION it's not semver!"
+            exit 1
+          fi
+
+          echo "Checking if docker hub has $SDK_VERSION tag"
+          status_code=$(curl --write-out %{http_code} --silent --output /dev/null https://hub.docker.com/v2/repositories/google/cloud-sdk/tags/$SDK_VERSION)
+          echo "Docker hub respond with $status_code"
+
+          if [ "$status_code" == "200" ] ; then
+            echo "Newest version present in docker hub"
+            echo "exist=yes" >> $GITHUB_OUTPUT
+          else
+            echo "Docker hub returns $status_code"
+            echo ::error::"Docker hub returns $status_code"
+            echo "exist=no" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Modify Dockerfile
+        id: modify
+        if: success() && steps.check.outputs.newest == 'yes' && steps.test.outputs.exist == 'yes'
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          git config --global url."https://$GH_TOKEN:@github.com/".insteadOf "https://github.com/"
+          git config --global user.name "Serhiy Mytrovtsiy"
+          git config --global user.email "mitrovtsiy@ukr.net"
+
+          git checkout master
+
+          FROM_LINE="FROM google\/cloud-sdk:$LATEST_VERSION-alpine"
+          TO_LINE="FROM google\/cloud-sdk:$SDK_VERSION-alpine"
+          sed -i "s/${FROM_LINE}/${TO_LINE}/" $GITHUB_WORKSPACE/Dockerfile
+
+          git add $GITHUB_WORKSPACE/Dockerfile
+          git commit -m "updated gcloud-sdk to $SDK_VERSION"
+          git push
+
+          echo "tag=${SDK_VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Create new release
+        if: success() && steps.modify.outputs.tag != '0'
+        uses: actions/create-release@0cb9c9b65d5d1901c1f53e5e66eaf4afd303e70e # v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+        with:
+          tag_name: ${{ steps.modify.outputs.tag }}
+          release_name: ${{ steps.modify.outputs.tag }}
+          draft: false
+          prerelease: false

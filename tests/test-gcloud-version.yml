@@ -1,4 +1,4 @@
-name: Test gcloud info command with CLOUDSDK_AUTH_ACCESS_TOKEN
+name: Test gcloud version command
 on:
   workflow_dispatch:
 jobs:
@@ -7,16 +7,16 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - id: gcloud_info
+      - id: gcloud_version
         uses: .
         with:
-          args: info --anonymize
+          args: version
           cli: gcloud
         env:
-          CLOUDSDK_AUTH_ACCESS_TOKEN: fake-token-for-info-check
+          CLOUDSDK_AUTH_ACCESS_TOKEN: fake-token-for-version-check
           PROJECT_ID: test-project
 
-      - name: Assert gcloud info ran successfully
+      - name: Assert gcloud version ran successfully
         run: |
-          echo "gcloud info step completed successfully"
+          echo "gcloud version step completed successfully"
           echo "PASS"
