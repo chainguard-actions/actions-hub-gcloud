@@ -1,0 +1,22 @@
+name: Test gsutil CLI selection
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: gsutil-version
+        uses: .
+        with:
+          cli: gsutil
+          args: version
+        env:
+          CLOUDSDK_AUTH_ACCESS_TOKEN: ya29.fake-token-for-version-check
+          PROJECT_ID: test-project-123
+          CLOUDSDK_CORE_DISABLE_PROMPTS: "1"
+          CLOUDSDK_COMPONENT_MANAGER_DISABLE_UPDATE_CHECK: "true"
+      - name: Assert gsutil version ran successfully
+        run: |
+          echo "gsutil version step completed successfully"
+          echo "PASS"
