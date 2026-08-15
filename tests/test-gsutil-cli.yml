@@ -1,0 +1,24 @@
+name: Test gsutil CLI selection
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Prepare GITHUB_PATH file for Docker action
+        run: |
+          touch "$GITHUB_PATH"
+      - id: gsutil-version
+        uses: .
+        env:
+          CLOUDSDK_AUTH_ACCESS_TOKEN: fake-token-for-auth-bypass
+          PROJECT_ID: test-project
+          CLOUDSDK_CORE_DISABLE_PROMPTS: "1"
+        with:
+          cli: gsutil
+          args: version
+      - name: Assert gsutil version step completed
+        run: |
+          echo "gsutil version step completed successfully"
+          echo "PASS"

@@ -84,5 +84,5 @@ if [ "$command" = "gcloud" ] && [ "$1" = "beta" ]; then
 fi
 
 if [ ! $# -eq 0 ]; then
-    eval "$command $*"
+    "$command" "$@"
 fi
