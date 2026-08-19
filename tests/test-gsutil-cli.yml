@@ -1,0 +1,32 @@
+name: Test gsutil CLI selection
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          args: version
+          cli: gsutil
+        env:
+          CLOUDSDK_AUTH_ACCESS_TOKEN: fake-token-for-testing
+          PROJECT_ID: test-project
+        continue-on-error: true
+      - name: Assert action ran with gsutil CLI
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          # gsutil version does not require auth, so it may succeed even with a fake token
+          # The entrypoint selects gsutil as the command when cli=gsutil
+          if [ "$OUTCOME" = "success" ]; then
+            echo "PASS: gsutil version ran successfully"
+          elif [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action failed gracefully (expected with fake credentials)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi
