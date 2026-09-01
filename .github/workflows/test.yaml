@@ -1,0 +1,64 @@
+name: test
+
+on: [push]
+
+permissions:
+  contents: read
+
+jobs:
+  json-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@0717577d45739eb3c851188b29f50ed6c0b2194e # v2
+
+      - uses: ./
+        env:
+          PROJECT_ID: ${{secrets.GCP_PROJECT_ID}}
+          APPLICATION_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS_JSON }}
+        with:
+          args: info
+
+  base64-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@0717577d45739eb3c851188b29f50ed6c0b2194e # v2
+
+      - uses: ./
+        env:
+          PROJECT_ID: ${{secrets.GCP_PROJECT_ID}}
+          APPLICATION_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
+        with:
+          args: info
+
+  multistep-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@0717577d45739eb3c851188b29f50ed6c0b2194e # v2
+
+      - uses: ./
+        env:
+          PROJECT_ID: ${{secrets.GCP_PROJECT_ID}}
+          APPLICATION_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
+
+      - uses: ./
+        with:
+          args: info
+
+  multistep-different-config-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@0717577d45739eb3c851188b29f50ed6c0b2194e # v2
+
+      - uses: ./
+        env:
+          PROJECT_ID: test-1
+          APPLICATION_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
+        with:
+          args: info
+
+      - uses: ./
+        env:
+          PROJECT_ID: test-2
+          APPLICATION_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
+        with:
+          args: info

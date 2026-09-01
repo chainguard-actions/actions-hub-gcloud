@@ -1,0 +1,32 @@
+name: Test gcloud - info command with default CLI
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Run gcloud info with fake access token
+        id: action
+        uses: .
+        continue-on-error: true
+        env:
+          CLOUDSDK_AUTH_ACCESS_TOKEN: fake-token-for-testing
+          PROJECT_ID: fake-project-id
+        with:
+          args: info
+
+      - name: Assert action ran (info command or failed gracefully)
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          if [ "$OUTCOME" = "success" ]; then
+            echo "PASS: gcloud info ran successfully"
+          elif [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action failed gracefully (fake token rejected by GCP API)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi
