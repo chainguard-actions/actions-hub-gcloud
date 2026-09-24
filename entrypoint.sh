@@ -84,10 +84,5 @@ if [ "$command" = "gcloud" ] && [ "$1" = "beta" ]; then
 fi
 
 if [ ! $# -eq 0 ]; then
-    args=()
-    if [ -n "$*" ]; then
-        while IFS= read -r -d '' t; do args+=("$t"); done \
-            < <(printf '%s' "$*" | xargs printf '%s\0')
-    fi
-    "$command" "${args[@]}"
+    eval "$command $*"
 fi
