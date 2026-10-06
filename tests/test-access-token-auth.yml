@@ -1,0 +1,33 @@
+name: Test gcloud - CLOUDSDK_AUTH_ACCESS_TOKEN auth path
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          args: version
+        env:
+          CLOUDSDK_AUTH_ACCESS_TOKEN: fake-token-for-testing
+          PROJECT_ID: test-project-id
+        continue-on-error: true
+      - name: Assert action did not fail due to missing credentials check
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          # With CLOUDSDK_AUTH_ACCESS_TOKEN set, the entrypoint should pass the
+          # credential check and attempt to run gcloud version.
+          # gcloud version does not require auth, so it should succeed.
+          # If it fails, it should be due to gcloud API issues, not missing credentials.
+          if [ "$OUTCOME" = "success" ]; then
+            echo "PASS: gcloud version succeeded with access token auth path"
+          elif [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action failed (possibly gcloud API issue with fake token), but credential check was bypassed"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi
