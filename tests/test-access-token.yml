@@ -1,0 +1,33 @@
+name: Test access token auth
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        env:
+          CLOUDSDK_AUTH_ACCESS_TOKEN: dummy-gcp-access-token
+          PROJECT_ID: actionchain-test-project
+        with:
+          args: info
+      - name: Assert action succeeded and added SDK paths
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          echo "PATH: $PATH"
+          if [ "$OUTCOME" != "success" ]; then
+            echo "FAIL: expected success"
+            exit 1
+          fi
+          case ":$PATH:" in
+            *:/google-cloud-sdk/bin/gcloud:*) echo "PASS: gcloud path added" ;;
+            *) echo "FAIL: /google-cloud-sdk/bin/gcloud not added to PATH"; exit 1 ;;
+          esac
+          case ":$PATH:" in
+            *:/google-cloud-sdk/bin/gsutil:*) echo "PASS: gsutil path added" ;;
+            *) echo "FAIL: /google-cloud-sdk/bin/gsutil not added to PATH"; exit 1 ;;
+          esac
