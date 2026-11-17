@@ -1,0 +1,36 @@
+name: Test basic usage with access token and project id
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        env:
+          CLOUDSDK_AUTH_ACCESS_TOKEN: dummy-access-token-for-offline-test
+          PROJECT_ID: act-test-project
+        with:
+          args: version
+      - name: Assert action succeeded
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          if [ "$OUTCOME" != "success" ]; then
+            echo "FAIL: expected success"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert gcloud paths were added to GITHUB_PATH
+        run: |
+          echo "PATH: $PATH"
+          case ":$PATH:" in
+            *"/google-cloud-sdk/bin/gcloud"*) echo "PASS: gcloud path present" ;;
+            *) echo "FAIL: /google-cloud-sdk/bin/gcloud not in PATH"; exit 1 ;;
+          esac
+          case ":$PATH:" in
+            *"/google-cloud-sdk/bin/gsutil"*) echo "PASS: gsutil path present" ;;
+            *) echo "FAIL: /google-cloud-sdk/bin/gsutil not in PATH"; exit 1 ;;
+          esac
