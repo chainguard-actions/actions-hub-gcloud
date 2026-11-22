@@ -35,6 +35,7 @@ Hardened by [Chainguard](https://www.chainguard.dev) from the upstream action at
 | 592.0.0 | [`592.0.0`](https://github.com/chainguard-actions/actions-hub-gcloud/tree/592.0.0) | [`6f302db`](https://github.com/actions-hub/gcloud/commit/6f302db3c37012f068f45b9b577d27c57bfc59f4) | [`HARDENING.md`](https://github.com/chainguard-actions/actions-hub-gcloud/blob/592.0.0/HARDENING.md) |
 | 593.0.0 | [`593.0.0`](https://github.com/chainguard-actions/actions-hub-gcloud/tree/593.0.0) | [`0aba3ab`](https://github.com/actions-hub/gcloud/commit/0aba3ab997ae61b21228d935fe9e037695040ebb) | [`HARDENING.md`](https://github.com/chainguard-actions/actions-hub-gcloud/blob/593.0.0/HARDENING.md) |
 | 594.0.0 | [`594.0.0`](https://github.com/chainguard-actions/actions-hub-gcloud/tree/594.0.0) | [`42a7cb3`](https://github.com/actions-hub/gcloud/commit/42a7cb3e168508c840432b9db92a97cd81609d44) | [`HARDENING.md`](https://github.com/chainguard-actions/actions-hub-gcloud/blob/594.0.0/HARDENING.md) |
+| 594.0.1 | [`594.0.1`](https://github.com/chainguard-actions/actions-hub-gcloud/tree/594.0.1) | [`6d3a3fe`](https://github.com/actions-hub/gcloud/commit/6d3a3fe3be5d8913f3145cfddbe52d50491bc2a9) | [`HARDENING.md`](https://github.com/chainguard-actions/actions-hub-gcloud/blob/594.0.1/HARDENING.md) |
 
 ## Privacy
 
